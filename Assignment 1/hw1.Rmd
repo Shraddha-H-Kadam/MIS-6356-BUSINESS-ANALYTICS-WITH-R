@@ -1,0 +1,136 @@
+---
+title: 'Homework_1 '
+author: "Shraddha Hemant Kadam (sxk190069@utdallas.edu)"
+date: "06/16/2020"
+output:
+  word_document: default
+  latex_engine: default'
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    theme: spacelab
+  html_notebook: default
+---
+
+### Loading Packages
+```{r loadPackages, warning=FALSE}
+pacman::p_load(data.table, gplots)
+pacman::p_load(esquisse, forecast, tidyverse, gplots, GGally, gganimate,
+               mosaic, scales, mosaic, mapproj, mlbench, data.table)
+pacman::p_load(tidyverse, reshape, gplots, ggmap, 
+               mlbench, data.table, factoextra)
+theme_set(theme_classic())
+library(ggplot2)
+```
+### Import data
+```{r dataImport, warning=FALSE}
+utilities.df <- fread("~/Utilities.csv")
+names(utilities.df)
+view(utilities.df)
+colnames(utilities.df) <- tolower(colnames(utilities.df))
+```
+### Question:1
+```{r question1, warning=FALSE}
+utilities.dt <- setDT(utilities.df)
+summary(utilities.dt[,2:9])
+sd_num <- apply(utilities.dt[,2:9],2,sd)
+
+sd_num
+
+
+"The variable 'Sales' and 'Cost' has the largest variability.
+The Standard Deviation is a measure of how spread out numbers are. And, since sales and cost has a standard deviation of 3549.9840305 and 41.1913495 respectively, we can figure out that they have the largest variability."
+```
+
+### Question:2
+```{r question2, warning=FALSE}
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = fixed_charge), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = ror), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = cost), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = load_factor), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = demand_growth), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = sales), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = nuclear), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+ggplot(data = utilities.dt) + 
+  geom_boxplot(mapping = aes(y = fuel_cost), color= "blue", fill="lightblue", outlier.colour = "red")+
+  coord_flip()
+
+"Yes, there are extreme values for two variables named.
+The two variables that have extreme values are 'Fixed_charge' and 'Sales'.
+We can easily identify the extreme values in their respective boxplots as they appear to be the outliers in 'Red' color."
+```
+
+### Question:3
+```{r question3, warning=FALSE}
+
+cor.mat <- round(cor(utilities.dt[,-c("company")]),2) 
+melted.cor.mat <- melt(cor.mat) 
+ggplot(melted.cor.mat, aes(x = X1, y = X2, fill = value)) + 
+  scale_fill_gradient(low="white", high="steelblue") +
+  geom_tile() + 
+  geom_text(aes(x = X1, y = X2, label = value)) +
+  ggtitle("Heatmap")
+
+"From heatmap we get to see the correlation between all variables such that the darker value represents that the correlation is high and the lighter value represents that the correlation is low.
+From the heatmap, above we can see that the variables 'ROR' and 'FIXED_CHARGE' have the highest positive correlation of '0.64' and the numbers above and below the diagonal are symmetrical."
+
+```
+### Question:4
+```{r question4, warning=FALSE}
+
+str(utilities.df)
+"From the above summary, we know that we have to exclude the categorical data that is present in the 'company' variable and perform principal component analysis on numerical data only."
+
+pcs <- prcomp(na.omit(utilities.df[,-c("company")])) 
+summary(pcs)
+"From the above importance of components, we can see that 8 principal components have been generated from PC1 to PC8 capturing a lot more information than it actually had by showing '0.9998' proportion of variation for PC1. 
+For instance, if we are satisfied with 90% criteria then we can use only one or two principal component instead of 8 which will lead to savings cost in terms of  time and effort needed to run this model. "
+
+pcs$rot # rotation matrix
+"By analyzing the weighted averages from the above results, in PC1, the highest absolute weight is of 'Sales' followed by 'Fixed_charge' and 'Ror'."
+
+scores <- pcs$x
+head(scores, 5)
+
+
+```
+
+### Question:5
+```{r question5, warning=FALSE}
+pcs.cor <- prcomp(na.omit(utilities.df[,-c("company")]), scale. = T)
+summary(pcs.cor)
+"After scaling the numerical variables, from the above importance of components we can see that 8 principal components have been generated from PC1 to PC8 capturing a lot more information than it actually had by showing '0.2716' proportion of variation for PC1. 
+For instance, if we are satisfied with 90% criteria then we can use only principal component from PC1 to PC6 instead of all 8 principal components which will lead to savings cost in terms of  time and effort needed to run this model. "
+
+
+pcs.cor$rot
+"By analyzing the weighted averages from the above results, we can see that the interpretation of the results has changed since we performed scaling on the numerical values. 
+In PC1, the highest absolute weight has changed from 'Sales' followed by 'Fixed_charge' and 'Ror' to 'ROR' followed by 'FIXED_CHARGE'
+It is noticeable that Sales is no longer predominant as it was before."
+
+scores1 <- pcs$x
+head(scores1, 5)
+
+```
+
