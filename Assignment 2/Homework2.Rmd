@@ -1,0 +1,274 @@
+---
+title: "Homework2"
+author: "Shraddha Hemant Kadam (sxk190069@utdallas.edu)"
+date: "06/23/2020"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  latex_engine: default'
+---
+
+
+**Loading Packages**
+```{r}
+pacman::p_load(data.table, forecast, leaps, tidyverse, ggcorrplot, corrplot, MASS)
+theme_set(theme_classic())
+
+
+```
+
+**Using Airfares data set**
+```{r readData}
+air.df <- read.csv("Airfares.csv")
+
+# Remove first four features
+air.df <- air.df[-c(1:4)]
+head(air.df)
+```
+
+**Question 1**
+**Correlation table and scatterplots:**
+```{r question1, warning=FALSE}
+#correlation table
+numeric.air.df <- air.df[, -c(3,4,10,11)]
+round(cor(numeric.air.df),3)
+head(numeric.air.df)
+
+#scatter plot
+ggplot(air.df, aes(x = COUPON, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs Coupon")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = NEW, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs New")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+
+ggplot(air.df, aes(x = VACATION, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs Vacation")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = SW, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs SW")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = HI, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs HI")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = S_INCOME, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs S_Income")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = E_INCOME, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs E_Income")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = S_POP, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs S_Pop")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = E_POP, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs E_Pop")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = SLOT, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs Slot")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = GATE, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs Gate")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = DISTANCE, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs Distance")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+ggplot(air.df, aes(x = PAX, y = FARE)) +
+  geom_point(size= 2, shape= 18, color = "blue", alpha = 0.5) +
+  ggtitle("Fare vs Pax")+
+  geom_smooth(linetype="dashed",
+             color="darkred")
+
+```
+Distance seems to be the best single predictor of FARE because it shows the most positive correlation of 0.670. That means 67% of the variation in FARE can be explained by change in Distance predictor.
+
+**Question2**
+**Pivot tables for categorical predictors:** 
+```{r question2, warning=FALSE}
+VACATION_f <- prop.table(table(air.df$VACATION))
+SW_f <- prop.table(table(air.df$SW))
+SLOT_f <- prop.table(table(air.df$SLOT))
+GATE_f <- prop.table(table(air.df$GATE))
+
+VACATION_AVG_Fare <- air.df %>% group_by(VACATION) %>% summarise(mean(FARE))
+SW_AVG_Fare <- air.df %>% group_by(SW) %>% summarise(mean(FARE))
+SLOT_AVG_Fare <- air.df %>% group_by(SLOT) %>% summarise(mean(FARE))
+GATE_AVG_Fare <- air.df %>% group_by(GATE) %>% summarise(mean(FARE))
+
+VACATION_PIVOT <- cbind(VACATION_f, VACATION_AVG_Fare)
+VACATION_PIVOT['Freq'] <- VACATION_PIVOT['Freq']*100
+VACATION_PIVOT$Var1<- NULL
+VACATION_PIVOT <- VACATION_PIVOT[c("VACATION","Freq","mean(FARE)")]
+names(VACATION_PIVOT)[2] <- "Percentage"
+names(VACATION_PIVOT)[3] <- "AVERAGE FARE"
+VACATION_PIVOT
+
+SW_PIVOT <- cbind(SW_f, SW_AVG_Fare)
+SW_PIVOT['Freq'] <- SW_PIVOT['Freq']*100
+SW_PIVOT$Var1<- NULL
+SW_PIVOT <- SW_PIVOT[c("SW","Freq","mean(FARE)")]
+names(SW_PIVOT)[2] <- "Percentage"
+names(SW_PIVOT)[3] <- "AVERAGE FARE"
+SW_PIVOT
+
+SLOT_PIVOT <- cbind(SLOT_f, SLOT_AVG_Fare)
+SLOT_PIVOT['Freq'] <- SLOT_PIVOT['Freq']*100
+SLOT_PIVOT$Var1<- NULL
+SLOT_PIVOT <- SLOT_PIVOT[c("SLOT","Freq","mean(FARE)")]
+names(SLOT_PIVOT)[2] <- "Percentage"
+names(SLOT_PIVOT)[3] <- "AVERAGE FARE"
+SLOT_PIVOT
+
+GATE_PIVOT <- cbind(GATE_f, GATE_AVG_Fare)
+GATE_PIVOT['Freq'] <- GATE_PIVOT['Freq']*100
+GATE_PIVOT$Var1<- NULL
+GATE_PIVOT <- GATE_PIVOT[c("GATE","Freq","mean(FARE)")]
+names(GATE_PIVOT)[2] <- "Percentage"
+names(GATE_PIVOT)[3] <- "AVERAGE FARE"
+GATE_PIVOT
+```
+From the above pivot tables of categorical variables, we can see that the difference in the FARE with and without SW on the routes is highest with the percentage of 69.59% and 30.40% respectively and as compared to other categorical variables SW can impact the fare prices significantly. Hence, SW is the best predictor of FARE.
+
+**Question3**
+**Data Partition:**
+```{r question3, warning=FALSE}
+set.seed(42)
+rows <- sample(nrow(air.df))
+air.df <- air.df[rows, ]
+
+#rows to split on
+split <- round(nrow(air.df) * (0.8))
+train.df <- air.df[1:split, ]
+test.df <- air.df[(split+1):nrow(air.df), ]
+test.df
+
+```
+
+
+**Question4**
+**Stepwise Regression:**
+```{r question4, warning=FALSE}
+air.lm<- lm(FARE ~ ., data= train.df)
+air.lm.stepwise <- step(air.lm,direction="both")
+summary(air.lm.stepwise)
+air.lm.stepwise.pred<-  predict(air.lm.stepwise, test.df)
+
+```
+
+The model above has dropped three variables based on the decreasing AIC values which are COUPON, S_INCOME, and NEW respectively which finalizes the minimum AIC value to 3649.22. 
+The p value is much less than 0.05 and the adjusted R square value is 0.7759 which states that this model can explain 77.59% of changes in the FARE.
+
+**Question5**
+**Exhaustive Search:**
+```{r question5, warning=FALSE}
+
+search <- regsubsets(FARE ~ ., data = train.df, nbest = 1, nvmax = dim(train.df)[2],
+                     method = "exhaustive")
+sum <- summary(search)
+sum$which
+
+sum$rsq
+sum$adjr2
+sum$cp
+```
+From the above Exhaustive search, we need to select the set of variables having highest adjusted R square value.
+The highest adjusted R square value in the above model is 0.77607 which is the 12th row and has 12 variables. But, for accuracy we will consider the CP values as the values look close to each other.
+From CP value results, we can see that cp<= p+1 is satisfies by 11th row and so we consider all the variables except COUPON and S_INCOME.
+By comparing Exhaustive search model with the stepwise regression model we see that adjusted R squared value in stepwise model was 0.7759 whereas in exhaustive model is 0.77607. Also the stepwise model dropped three variables whereas the exhaustive model dropped two variables.
+
+**Question6**
+**Comparing Predictive Accuracy:**
+```{r question6, warning=FALSE}
+accuracy(air.lm.stepwise.pred, test.df$FARE) # Stepwise Accuracy
+
+air.exhaustive.lm <- lm(FARE~ COUPON+NEW+VACATION+SW+HI+E_INCOME+S_POP+E_POP+SLOT+GATE+
+                       DISTANCE+PAX, data = train.df )
+predict.exhaustive.lm <- predict(air.exhaustive.lm, test.df)
+accuracy(predict.exhaustive.lm, test.df$FARE) # Exhaustive Accuracy
+```
+
+By comparing the predictive accuracies of both models using RMSE measure from above results, we can see that stepwise RMSE is 36.8617 and that of exhaustie is 36.97323 which helps us concluding that stepwise regression is better as it has low RMSE value.Also, the number of variable left in stepwise regression were 10 (excluding FARE) and that in exhaustive were 11 (excluding FARE). 
+
+**Question7**
+**Predict Average Fare on a route:**
+```{r question7, warning=FALSE}
+test2.df <- data.frame(COUPON = 1.202, NEW = 3, VACATION = 'No', SW = 'No', 
+                       HI = 4442.141, S_INCOME = 28760, E_INCOME = 27664, S_POP = 4557004, 
+                       E_POP = 3195503, SLOT = 'Free', GATE = 'Free', 
+                       PAX = 12782, DISTANCE = 1976)
+predict.exhaustive.lm2 <- predict(air.exhaustive.lm, test2.df)
+predict.exhaustive.lm2
+  
+```
+From the above results of exhaustive search model, the average fare on a route with given characteristics is $245.2815.
+
+**Question8**
+**Predict Reduction in average fare:**
+```{r question8, warning=FALSE}
+test3.df <- data.frame(COUPON = 1.202, NEW = 3, VACATION = 'No', 
+                       SW = 'Yes', HI = 4442.141, S_INCOME = 28760, 
+                       E_INCOME = 27664, S_POP = 4557004, E_POP = 3195503, 
+                       SLOT = 'Free', GATE = 'Free', PAX = 12782, DISTANCE = 1976)
+predict.exhaustive.lm3 <- predict(air.exhaustive.lm, test3.df)
+predict.exhaustive.lm3
+predict.exhaustive.lm2-predict.exhaustive.lm3
+```
+If southwest decides to cover the route, using the exhaustive search model, the average fare turns out to be $204.8958 with a reduction of $40.38569.
+
+**Question9**
+**Backward Selection Regression:**
+```{r question9, warning=FALSE}
+air.lm.bselect <- step(air.lm, direction = "backward")
+summary(air.lm.bselect)  
+air.lm.bselect.pred <- predict(air.lm.bselect, test.df)
+accuracy(air.lm.bselect.pred, test.df$FARE)
+
+```
+As we can see in the above results, the backward selection model dropped three variable, COUPON, S_INCOME, and NEW.
+The RMSE value using backward selection model is 36.8617 which is same as that of stepwise regression because both the models dropprd same set of variables. Although the RMSE value of backward selection model is less than that of the exhaustive search model.
+
+**Question10**
+**Backward Selection model using stepAIC():**
+```{r question10, warning=FALSE}
+air.lm.step2 <- stepAIC(air.lm, direction = "backward")
+summary(air.lm.step2)  
+air.lm.step2.pred <- predict(air.lm.step2, test.df)
+accuracy(air.lm.step2.pred, test.df$FARE)
+
+```
+The AIC value decreases as we drop each variable till we get the best-fit model. The AIC values in the Backward and StepAIC methods are same as 3649.22 (minimum). The values came out to be same because both the models have dropped the same set of variables which are COUPON, NEW, and S_Income. Hence, we did not see any effect of using StepAIC function in this case.
