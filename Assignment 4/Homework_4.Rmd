@@ -1,0 +1,108 @@
+---
+title: "Homework4"
+author: "Shraddha Hemant Kadam (sxk190069@utdallas.edu)"
+date: "07/28/2020"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  latex_engine: default'
+---
+
+```{r loadpackages, warning=FALSE, message=FALSE}
+pacman::p_load(data.table, MASS, ggplot2, dplyr, ISLR, RColorBrewer,
+               rpart, rpart.plot, gbm, caret, tree,leaps, moments,randomForest, gains)
+knitr::opts_chunk$set(echo = TRUE, fig.height=8, fig.width=12, fig.path = 'Figs/')
+theme_set(theme_classic())
+options(digits = 3)
+```
+
+```{r Question1, warning=FALSE}
+data(Hitters) 
+head(Hitters)
+tail(Hitters)
+colSums(is.na(Hitters))
+Hitters <- Hitters[!is.na(Hitters$Salary), ]
+```
+1 Ans: The dataset had 322 observations initially. When I checked for missing values in the dataset which had observations with unknown salary information, I found out that there were 59 observations having missing values. 
+So those 59 observations were removed, leaving 263 observations in this dataset.
+
+
+```{r Question2, warning=FALSE }
+hist(Hitters$Salary)
+skewness(Hitters$Salary)
+```
+2 Ans: To transform  the salaries using a natural log transformation, lets first visualize how our data looks like. By looking at the above histogram we can see that it is right skewed with a skewness of 1.58.
+Logarithmic transformation is transforming a highly skewed variable into a more normalized distribution. Hence, let us see what impact does log transformation of the salary have on skewness.
+```{r}
+hist(log(Hitters$Salary))
+skewness(log(Hitters$Salary))
+```
+From above we can see that the skewness has been significantly decreased to -0.181.
+So now we make changes in the dataset by transforming the salaries.
+```{r}
+T_Salary<- Hitters[,19]
+T_Salary<- log(T_Salary)
+Hitters<-Hitters[,-19]
+Hitters<-cbind(Hitters,T_Salary)
+```
+
+
+```{r Question3, warning=FALSE }
+ggplot(Hitters, aes (x=Years, y=Hits))+ geom_point(aes(color = T_Salary)) + 
+  scale_color_gradientn(colours = rainbow(5)) +
+  ggtitle("Years vs Hits")
+```
+3 Ans: From the above scatter plot we can see that by considering players having 0-5 years of experience, the salary is 
+on the lower end of the spectrum regardless of having higher number of hits. And as number of years are increasing, the salary is also increasing. There are more number of players who have 7 or less years of experience. There is an outlier where players have higher salary as compared to the other players with the same number of experience and higher hits.
+
+
+```{r Question4, warning=FALSE}
+options(digits=6)
+search <- regsubsets(T_Salary ~ ., data = Hitters, nbest = 1, 
+                     nvmax = dim(Hitters),
+                     method = "exhaustive")
+sum <- summary(search)
+sum$which
+sum$bic
+```
+4 Ans: We know that lower the BIC value better is the model, and in order to calculate the BIC value, I have used regsubsets() to perform best subset selection from the regression model in the above code with the exhaustive method. 
+So if we consider above BIC values, "-159.278" is the lowest among all others which gives us the sub-model 3 in exhaustive search as the best model having the following predictors:
+1.Hits
+2.Walks
+3.Years
+
+5 Ans: Creating a training dataset consisting of 80% of the observations and test/validation dataset consisting of the remaining observations.
+```{r Question5, warning=FALSE}
+set.seed(42)
+train.index<-sample(1:nrow(Hitters), nrow(Hitters)*0.8)
+train.df <- Hitters[train.index, ]
+valid.df<- Hitters[-train.index, ]
+```
+
+
+```{r Question6, warning=FALSE}
+dpr.ct <- rpart(T_Salary ~ Years + Hits, data = train.df, 
+                   method = "anova")
+prp(dpr.ct, type = 1, extra = 1, under = TRUE,roundint=FALSE,
+    split.font = 2, varlen = -10, 
+    box.palette = "BuOr")
+for(i in 1:nrow(Hitters))
+  {
+if(((Hitters$Hits[i]>= 104) && Hitters$Years[i] >= 4.5))
+  {
+  print(row.names(Hitters)[i])
+   }
+}
+
+``` 
+6 Ans: From the above tree we can see that highest salary is transformed salary of 6.7, so the rule for players receiving the highest salary is Years should be 4.5 or more and Number of hits should be greater than or equals 104.
+The players likely to receive highest salaries according to this model are as stated above in the results.
+
+
+
+
+
+
+
+
+
